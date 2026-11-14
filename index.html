@@ -495,10 +495,11 @@ function playJingle(id,x,y,buy){
   if(isHost())netEv(['j',id,Math.round(x||0),Math.round(y||0),buy?1:0]);
   const j=JINGLES[id];if(!j||!AC||muted)return;
   let v=1;if(x!==undefined){v=clamp(1-(nearestPlayerDist(x,y)-90)/480,0,1);v*=v;}
-  if(v<0.04)return;
+  if(!buy)v*=0.4;
+  if(v<0.02)return;
   if(SND.buf[id]){const now=AC.currentTime;
     if(!buy&&now<SND.tEnd)return;
-    const mx=buy?(MAPID===2?3:0):4.5,r=sndPlay(id,{vol:0.9*Math.max(0.25,v),max:mx,fade:1,slot:'tonic'});
+    const mx=buy?(MAPID===2?3:0):4.5,r=sndPlay(id,{vol:buy?1.0:Math.min(0.5,v),max:mx,fade:1,slot:'tonic'});
     if(r){SND.tEnd=now+r.len;return;}
   }
   sfxScale=v;const beat=60/j.bpm;let t=0;
@@ -2102,7 +2103,8 @@ function initBoss(z,bd){
   z.bdef=bd;const lp=W.bossLoop||0;
   z.dm=(isMP()?1.1:1)*(1+0.12*lp)*(bd.dmm||1);
   const hp=(1800+Math.min(Math.max(1,W.n),bd.hpCap||9999)*300)*bd.hpm*(1+0.5*lp)*mpHP()*(isMP()?1.1:1);
-  z.hp=z.maxhp=hp;z.dmg=(bd.melee||42)*(isMP()?1.1:1);z.speed=bd.robot?Math.min(172,(128+Math.min(Math.max(1,W.n),25)*1.6)*(bd.spd||1)):Math.min(98,(62+Math.max(1,W.n)*1.5)*(bd.spd||1));
+  z.hp=z.maxhp=hp;z.dmg=(bd.melee||42)*(isMP()?1.1:1);
+  if(bd.robot){const k=1.25+0.1*players.length;z.hp=z.maxhp=hp*k;z.dm*=k;z.dmg*=k;}z.speed=bd.robot?Math.min(172,(128+Math.min(Math.max(1,W.n),25)*1.6)*(bd.spd||1)):Math.min(98,(62+Math.max(1,W.n)*1.5)*(bd.spd||1));
   z.abT={};for(const a of bd.ab)z.abT[a.id]=a.cd*(bd.cdm||1)*rand(0.35,0.7);
   z.gcd=2.2;z.cast=0;z.q=[];z.say='';z.sayT=0;z.buff=0;z.enr=false;z.fin=false;z.beam=null;
   if(!bd.charge)z.chargeCd=9999;
@@ -3027,7 +3029,7 @@ function doWeaponMelee(w){
 }
 function updateMachines(dt){
   if(!power)return;
-  for(const m of MACHINES){m.jt-=dt;if(m.jt<=0){if(MAPID===2){m.jt=99;continue;}m.jt=rand(16,28);const cx=(m.x+m.w/2)*TS,cy=(m.y+0.5)*TS;if(nearestPlayerDist(cx,cy)<560)playJingle(m.id,cx,cy);}}
+  for(const m of MACHINES){m.jt-=dt;if(m.jt<=0){if(MAPID===2){m.jt=99;continue;}m.jt=rand(55,90);const cx=(m.x+m.w/2)*TS,cy=(m.y+0.5)*TS;if(nearestPlayerDist(cx,cy)<560)playJingle(m.id,cx,cy);}}
 }
 /* ---------------- waves ---------------- */
 const REPAIR_CAP=20;
@@ -3731,7 +3733,7 @@ NEWSFX.bslam=function(){tone(48,1.3,'sine',1,20,0,{wet:0.55});noise(0.6,0.8,450,
 NEWSFX.brage=function(){tone(52,2.2,'sawtooth',0.5,36,0,{lp:700,vib:[12,15],wet:0.5});tone(880,1.7,'sawtooth',0.12,260,0.05,{lp:2600,vib:[9,60],wet:0.6});tone(1320,1.5,'sawtooth',0.07,400,0.1,{lp:3000,vib:[11,80],wet:0.7});noise(1.6,0.5,800,0,{type:'bandpass',q:1.2,fqTo:180,wet:0.5});for(let i=0;i<7;i++)tone(110+Math.random()*320,0.12,'square',0.08,40,0.1+i*0.18,{lp:900});};NGAP.brage=800;
 NEWSFX.bthroes=function(){tone(46,2.8,'sawtooth',0.55,24,0,{lp:600,vib:[18,12],wet:0.5});for(const m of [60,61,66,72])tone(mf(m),2.4,'sawtooth',0.1,mf(m-7),0.02,{lp:2400,vib:[8,40],wet:0.7});noise(2.2,0.55,2500,0,{fqTo:150,atk:0.1,wet:0.6});for(let i=0;i<9;i++)noise(0.05,0.3,4500,0.1+i*0.25+Math.random()*0.1,{type:'bandpass',q:4});};NGAP.bthroes=900;
 NEWSFX.bsquish=function(){noise(0.18,0.3,700,0,{type:'bandpass',q:2,fqTo:200});tone(160,0.15,'sine',0.3,60);};NGAP.bsquish=140;
-const BLOAT={id:'bloat',name:'THE BLOAT',title:'Experiment #13',intro:"Ms. Pharr's Experiment #13 has escaped its tank!",col:'#b6ff2e',glow:'rgba(130,255,60,.30)',hpm:1.45,hpCap:22,bloat:true,charge:false,spd:0.72,melee:40,cdm:0.82,dmm:1.2,enrRate:1.8,noBanner:true,
+const BLOAT={id:'bloat',name:'THE BLOAT',title:'Experiment #13',intro:"Ms. Pharr's Experiment #13 has escaped its tank!",col:'#b6ff2e',glow:'rgba(130,255,60,.30)',hpm:1.0,hpCap:22,bloat:true,charge:false,spd:0.72,melee:32,cdm:0.82,dmm:0.85,enrRate:1.8,noBanner:true,
   enrage:'GLUUUURRRGH!',
   look:{shirt:'#7fb04a',pants:'#3d4d28',skin:['#9acb62','#5f8f3c'],prop:null},
   onEnrage(z,P){z.speed*=1.25;bcEv('rage');bloatEruptions(z,4);},
@@ -5926,6 +5928,7 @@ function stSpawnSmalley(){
   const w={sx:AXP,sy:AYP,dy:0,boards:0},z=mkZombie('boss',w,SMALLEY);
   z.out=false;z.x=AXP;z.y=AYP;z.hold=0;z.sm=1;z.sid=2;z.pcs='rise';z._t=0;z.bhold=99;z.rs=0;z.fp=0;z.jz=0;z.ang=Math.PI/2;z.lx=z.x;z.ly=z.y;z.r=26;z.hr=36;z.speed=60;z._n=0;z._cnt=3;z._lock=0;z._last=[];z._mc=2;
   z.hp=z.maxhp=Math.round(SM_BASE*mpHP()*(SB?SB.zhp:1));
+  {const k=1.25+0.1*players.length;z.hp=z.maxhp=Math.round(z.maxhp*k);z.dm*=k;z.dmg*=k;}
   {const n=players.length;if(n>=2){z.dm*=1.3+0.1*(n-2);z.dmg*=1.3+0.1*(n-2);}}
   zombies.push(z);return z;
 }
