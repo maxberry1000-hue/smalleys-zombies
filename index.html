@@ -1585,7 +1585,7 @@ function resetGame(){
   banner=null;note=null;beamNow=null;drone=null;shake=0;flashScreen=0;flowDirty=true;flowT=0;flowCell=-1;
   time=0;hintT=22;shotCounter=0;killsSinceDrop=0;ambush=0;ambT=0;bellSpawnT=0;curInt=null;statKills=0;
   if(SB&&!isClient())sbApply();
-  eg={};EGGC=null;lab=labInit();kid=kidInit();bcvReset();stReset();if(SB&&MAPID===1&&SB.keys>0&&!isClient())for(let i=0;i<Math.min(4,SB.keys);i++)lab.keys[i]=1;swT=-9;storm={t:rand(6,12),flash:0,th:-1};
+  eg={};EGGC=null;lab=labInit();kid=kidInit();bcvReset();stReset();if(SB&&MAPID===1&&SB.keys>0&&!isClient())for(let i=0;i<Math.min(4,SB.keys);i++)lab.keys[i]=1;if(SB&&MAPID===1&&SB.kready&&!isClient())stKidReady();swT=-9;storm={t:rand(6,12),flash:0,th:-1};
   stair={on:MAPID===1,t:0,p:0,done:true,alm:false,alT:0,grT:0,spT:0};
   if(MAPID===1){if(W.n>0||(SB&&SB.wave>1)||(SB&&SB.nz))stair.p=1;else{stair.done=false;W.t=15;}}
 }
@@ -2827,7 +2827,7 @@ function updateInteract(dt){
   for(const it of list){const s=it.d-(it.prio||0);if(s<bs){bs=s;best=it;}}
   p.int=best;
   if(best){
-    if(best.hold){if(ctlDown(p,'use'))best.act(dt);}
+    if(best.hold){if(ctlDown(p,'use')||(best.hv&&ctlDown(p,'melee')))best.act(dt);}
     else if(I.use)best.act();
   }
   I.use=false;
@@ -4860,9 +4860,9 @@ function kidInteract(p,out){
       if(w&&!WDEF[w.id].inf){w.mag=wstat(w,'mag');w.res=wstat(w,'res');showBanner('SPARE AMMO!','A band kid stashed a full ammo clip in here. Your weapon is topped up.','#7dff9a',3.6,p);}
       else{addPts(150,p.x,p.y-44);showBanner('BAND FUNDRAISER CASH','A crumpled envelope with a few bucks in it. +150','#ffd633',3.4,p);}}});}
   if(rc<=52&&FACE(KL.c)&&kid.s==='locker'){
-    const w=p.weapons[p.cur],hasW=w&&w.id==='welder';
+    const w=p.weapons[p.cur],hasW=(w&&w.id==='welder')||p.mw==='welder';
     if(W.n<15)out.push({d:rc,text:'Press E: Open the locker',prio:12,act:()=>{showBanner("There's nothing in there.",'','#aab4bd',2.4,p);}});
-    else if(hasW)out.push({d:rc,text:'Hold E: Cut the welded locker open  ('+Math.floor(kid.weld*100)+'%)',can:true,hold:true,prio:12,act:dt=>kidWeld(p,dt)});
+    else if(hasW)out.push({d:rc,text:'Hold E or V: Cut the welded locker open  ('+Math.floor(kid.weld*100)+'%)',can:true,hold:true,hv:true,prio:12,act:dt=>kidWeld(p,dt)});
     else out.push({d:rc,text:'Press E: Open the locker',prio:12,act:()=>{showBanner("It's welded shut.",'Maybe something hot could melt it?','#ffb36a',3.4,p);}});
   }
 }
@@ -5454,6 +5454,11 @@ function stMiniKill(z){
   addPts(z.pv||15,z.x,z.y-12);
   if(z.pap){if(typeof stPapDie==='function')stPapDie(z);}
   else{sparks(z.x,z.y,'#7dff9a',10);sparks(z.x,z.y,'#ffd27a',5);sfxAt('stzap',z.x,z.y,500);}
+}
+
+/* Testing Mode: the kid is already safe in Ms. Pharr's lab and the candy machine is in the building */
+function stKidReady(){
+  const K=kid;K.s='safe';K.x=(KGOAL.x+0.5)*TS;K.y=(KGOAL.y+0.5)*TS;K.vx=K.vy=0;K.sh=1;K.vm=1;K.cand=0;kv.vm=1;stVmFill();ST.hk=1;power=true;
 }
 /* ---------------- Chapter 1 drawing: vending machine, robot husk, rebooted robot, mini-bots, portal, beams, scene overlay ---------------- */
 function stVeins(a,seed){
@@ -7798,7 +7803,7 @@ function menuBack(){if(menu.page==='maps'&&menu.chapOpen){menu.chapOpen=false;me
 function glassP(){return clamp((nowS()-menu.glassT0-0.7)/1.6,0,1);}
 function menuGate(){if(glassP()<1)return;audioInit();menu.page='main';menu.sel=0;menu.t0=nowS();try{musicStart();}catch(e){}try{sfx('tick');}catch(e){}}
 /* ---------------- TESTING MODE (sandbox) ---------------- */
-const SBDEF={map:0,mode:'single',wave:1,cash:600,dmg:1,zhp:1,hp:100,spd:1,zspd:1,zdmg:1,zcnt:1,god:false,inf:false,power:false,doors:false,tonics:false,forge:false,gun:'pistol',tier:0,nz:false,nb:false,zsize:1,pmult:1,rate:1,heal:0,drops:1,rush:false,gspd:1,keys:0};
+const SBDEF={map:0,mode:'single',wave:1,cash:600,dmg:1,zhp:1,hp:100,spd:1,zspd:1,zdmg:1,zcnt:1,god:false,inf:false,power:false,doors:false,tonics:false,forge:false,gun:'pistol',tier:0,nz:false,nb:false,zsize:1,pmult:1,rate:1,heal:0,drops:1,rush:false,gspd:1,keys:0,kready:false};
 let sbCfg=Object.assign({},SBDEF);
 const SBGUNS=()=>Object.keys(WDEF).filter(k=>!WDEF[k].melee&&!WDEF[k].secret);
 /* t:'num' rows can go up AND down with the arrows (through the ladder `lad`), or be typed in by clicking the number. min/max are hard limits. */
@@ -7831,13 +7836,14 @@ const SBROWS=[
   {k:'drops',n:'POWER-UP DROPS',t:'num',min:0,max:10,lad:[0,0.5,1,2,5,10],fun:1},
   {k:'rush',n:'BOSS RUSH (EVERY ROUND)',t:'bool',fun:1},
   {k:'gspd',n:'GAME SPEED',t:'num',min:0.25,max:2.5,lad:[0.25,0.5,0.75,1,1.5,2,2.5],fun:1,off:1,solo:1},
-  {k:'keys',n:'LAB KEYS AT START',t:'num',min:0,max:4,int:1,st:1,fun:1}
+  {k:'keys',n:'LAB KEYS AT START',t:'num',min:0,max:4,int:1,st:1,fun:1},
+  {k:'kready',n:'KID READY (MAP 2)',t:'bool'}
 ];
 function sbList(r){return r.v||SBGUNS();}
 function sbNum(v){v=+v;return String(Math.round(v*100)/100);}
 function sbFmt(r,v){
   if(r.t==='bool')return v?'ON':'OFF';
-  if(r.k==='map')return v===2?'FINAL ROOM':(v===1?'2ND FLOOR':'1ST FLOOR');
+  if(r.k==='map')return v===2?'MrSmalleyBF':(v===1?'2ND FLOOR':'1ST FLOOR');
   if(r.k==='mode')return v==='coop'?'CO-OP':'SINGLE';
   if(r.k==='gun')return WDEF[v]?WDEF[v].name:String(v);
   if(r.k==='tier')return ['NORMAL','FORGE 1','FORGE 2'][v];
@@ -10170,7 +10176,7 @@ function showView(v){
       '<div class="row"><button data-a="copycode">COPY CODE</button><button data-a="copylink">COPY INVITE LINK</button></div><div id="o-toast" class="sub" style="height:16px;margin:0"></div>'+
       '<h2>PLAYERS ('+online.roster.length+' / '+online.max+')</h2><div id="o-roster"></div>'+
       privHtml(host)+'<h2>GAME SETTINGS</h2>'+
-      (host?'<div class="row"><div><div class="tip" style="margin:0 0 4px">MAP</div><select id="o-map"><option value="0"'+(online.map===0?' selected':'')+'>Map 1 - Horizon High</option><option value="1"'+(online.map===1?' selected':'')+'>Map 2 - The Second Floor</option>'+(online.tm?'<option value="2"'+(online.map===2?' selected':'')+'>Map 3 - The Final Lesson (testing)</option>':'')+'</select></div>'+
+      (host?'<div class="row"><div><div class="tip" style="margin:0 0 4px">MAP</div><select id="o-map"><option value="0"'+(online.map===0?' selected':'')+'>Map 1 - Horizon High</option><option value="1"'+(online.map===1?' selected':'')+'>Map 2 - The Second Floor</option>'+(online.tm?'<option value="2"'+(online.map===2?' selected':'')+'>MrSmalleyBF - Mr. Smalley boss fight (testing)</option>':'')+'</select></div>'+
         '<div><div class="tip" style="margin:0 0 4px">MAX PLAYERS</div><select id="o-max">'+[2,3,4,5,6].map(n=>'<option value="'+n+'"'+(online.max===n?' selected':'')+'>'+n+' players</option>').join('')+'</select></div></div>'
         :'<p>Map: <b>'+(online.map===2?'Map 3 - The Final Lesson':online.map===1?'Map 2 - The Second Floor':'Map 1 - Horizon High')+'</b> &nbsp;|&nbsp; Max players: <b>'+online.max+'</b><br><span class="tip">Only the host can change these.</span></p>')+
       '<div class="row">'+(host?'<button class="g" data-a="start">START GAME</button>':'<button class="d" disabled>WAITING FOR THE HOST<span class="dots"></span></button>')+'<button class="d" data-a="leave">LEAVE</button></div>'+
